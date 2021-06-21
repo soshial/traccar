@@ -30,17 +30,31 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Freematics API reference: https://freematics.com/pages/hub/api/
+ */
 public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
 
     public FreematicsProtocolDecoder(Protocol protocol) {
         super(protocol);
     }
 
+    /**
+     * Event codes listed here: https://github.com/stanleyhuangyc/Freematics/blob/master/firmware_v5/telelogger/teleclient.h
+     *
+     * Example string:
+     * A0QWERT0#EV=7,TS=2206661,ID=A0QWERT0,*33
+     *
+     * @param channel
+     * @param remoteAddress
+     * @param sentence
+     * @return
+     */
     private Object decodeEvent(
             Channel channel, SocketAddress remoteAddress, String sentence) {
 
         DeviceSession deviceSession = null;
-        String event = null;
+        Integer event = null;
         String time = null;
 
         for (String pair : sentence.split(",")) {
@@ -55,9 +69,10 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                     }
                     break;
                 case "EV":
-                    event = value;
+                    event = Integer.valueOf(value);
                     break;
                 case "TS":
+                    // device timer counter in milliseconds
                     time = value;
                     break;
                 default:
@@ -66,7 +81,8 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
         }
 
         if (channel != null && deviceSession != null && event != null && time != null) {
-            String message = String.format("1#EV=%s,RX=1,TS=%s", event, time);
+            // traccar must respond to the device to confirm receival
+            String message = String.format("1#EV=%d,RX=1,TS=%s", event, time);
             message += '*' + Checksum.sum(message);
             channel.writeAndFlush(new NetworkMessage(message, remoteAddress));
         }
@@ -74,6 +90,15 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
         return null;
     }
 
+    /**
+     * Freematics Packed Data Format documentation: https://freematics.com/pages/hub/freematics-data-logging-format/
+     *
+     * @param channel
+     * @param remoteAddress
+     * @param sentence
+     * @param id
+     * @return
+     */
     private Object decodePosition(
             Channel channel, SocketAddress remoteAddress, String sentence, String id) {
 
@@ -198,12 +223,19 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
 
         if (startIndex > 0 && endIndex > 0) {
             String id = sentence.substring(0, startIndex);
-            sentence = sentence.substring(startIndex + 1, endIndex);
 
-            if (sentence.startsWith("EV")) {
-                return decodeEvent(channel, remoteAddress, sentence);
+            String checkSumReceived = sentence.substring(endIndex + 1);
+            String checkSumCalculated = Checksum.sum(sentence.substring(0, endIndex));
+            String content = sentence.substring(startIndex + 1, endIndex);
+
+            if (!checkSumReceived.equals(checkSumCalculated)) {
+                throw new IllegalArgumentException("Corrupted checksum for " + getProtocolName() + ": " + sentence);
+            }
+
+            if (content.startsWith("EV")) {
+                return decodeEvent(channel, remoteAddress, content);
             } else {
-                return decodePosition(channel, remoteAddress, sentence, id);
+                return decodePosition(channel, remoteAddress, content, id);
             }
         }
 

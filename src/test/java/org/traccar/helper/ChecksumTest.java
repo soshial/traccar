@@ -49,4 +49,14 @@ public class ChecksumTest {
         assertEquals("*2A", Checksum.nmea("GSC,011412000010789,M4(Ro=500)"));
     }
 
+    @Test
+    public void testSum() {
+        // sentence and checksum:        A0QWERT0#EV=7,TS=2206661,ID=A0QWERT0,*21
+        assertEquals("33", Checksum.sum("A0QWERT0#EV=7,TS=2206661,ID=A0QWERT0,"));
+        // sentence and checksum:        1#EV=7,RX=1,TS=2206661*1E
+        assertEquals("1E", Checksum.sum("1#EV=7,RX=1,TS=2206661"));
+        // sentence and checksum:        A0QWERT0#0:515284085,24:1340,92:1,20:-0.05;0.35;-0.26,82:47,11:280621,10:6025550,A:87.185104,B:12.467801,C:117.300003,D:55.900002,E:110,F:12,12:70,*0D
+        assertEquals("0D", Checksum.sum("A0QWERT0#0:515284085,24:1340,92:1,20:-0.05;0.35;-0.26,82:47,11:280621,10:6025550,A:87.185104,B:12.467801,C:117.300003,D:55.900002,E:110,F:12,12:70,"));
+    }
+
 }
