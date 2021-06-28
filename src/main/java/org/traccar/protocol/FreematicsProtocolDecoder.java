@@ -111,6 +111,9 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
         Position position = null;
         DateBuilder dateBuilder = null;
 
+        Double memsTemperature = null;
+        Double cpuTemperature = null;
+
         for (String pair : sentence.split(",")) {
             String[] data = pair.split("[=:]");
             int key;
@@ -171,6 +174,9 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                     case 0x20:
                         position.set(Position.KEY_ACCELERATION, value);
                         break;
+                    case 0x23:
+                        memsTemperature = Integer.parseInt(value) * 0.1;
+                        break;
                     case 0x24:
                         position.set(Position.KEY_BATTERY, Integer.parseInt(value) * 0.01);
                         break;
@@ -178,7 +184,7 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                         position.set(Position.KEY_RSSI, Integer.parseInt(value));
                         break;
                     case 0x82:
-                        position.set(Position.KEY_DEVICE_TEMP, Integer.parseInt(value) * 0.1);
+                        cpuTemperature = Integer.parseInt(value) * 0.1;
                         break;
                     case 0x104:
                         position.set(Position.KEY_ENGINE_LOAD, Integer.parseInt(value));
@@ -200,6 +206,12 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                         break;
                 }
             }
+        }
+
+        // MEMS temperature sensor is more accurate, but MEMS might be turned off
+        Double deviceTemperature = memsTemperature == null ? cpuTemperature : memsTemperature;
+        if (deviceTemperature != null) {
+            position.set(Position.KEY_DEVICE_TEMP, deviceTemperature);
         }
 
         if (position != null) {
