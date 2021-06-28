@@ -1,5 +1,6 @@
 package org.traccar.protocol;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.traccar.ProtocolTest;
 
@@ -29,17 +30,29 @@ public class FreematicsProtocolDecoderTest extends ProtocolTest {
                 "1#0:47607,20:0;0;0,24:423,0:48732,20:0;0;0,24:428,10:4280140,A:0.000000,B:0.000000,C:0.00,D:18520000.00,F:2,30:32924444*BA"));
 
         verifyPositions(decoder, text(
-                "1#0:68338,10D:79,30:1010,105:199,10C:4375,104:56,111:62,20:0;-1;95,10:6454200,A:-32.727482,B:150.150301,C:159,D:0,F:5,24:1250*7A"));
+                "1#0:68338,10D:79,30:1010,105:199,10C:4375,104:56,111:62,20:0;-1;95,10:6454200,A:-32.727482,B:150.150301,C:159,D:0,F:5,24:1250*4B"));
 
         verifyPositions(decoder, text(
-                "1#0=68338,10D=79,30=1010,105=199,10C=4375,104=56,111=62,20=0;-1;95,10=6454200,A=-32.727482,B=150.150301,C=159,D=0,F=5,24=1250*7A"));
+                "1#0=68338,10D=79,30=1010,105=199,10C=4375,104=56,111=62,20=0;-1;95,10=6454200,A=-32.727482,B=150.150301,C=159,D=0,F=5,24=1250*78"));
 
         verifyPositions(decoder, false, text(
-                "M0ZR4X0#0:566624,24:1246,20:0;0;0*D"));
+                "M0ZR4X0#0:566624,24:1246,20:0;0;0*16"));
 
         verifyNull(decoder, text(
-                "M0ZR4X0#DF=4208,SSI=-71,EV=1,TS=20866,ID=M0ZR4X0*9E"));
+                "M0ZR4X0#DF=4208,SSI=-71,EV=1,TS=20866,ID=M0ZR4X0*B0"));
+    }
 
+    @Test
+    public void testException() {
+        var decoder = new FreematicsProtocolDecoder(null);
+
+        // wrong checksum
+        Assert.assertThrows(IllegalArgumentException.class, () ->
+                verifyPositions(decoder, false, text("M0ZR4X0#0:566624,24:1246,20:0;0;0*17")));
+
+        // should be *0E
+        Assert.assertThrows(IllegalArgumentException.class, () ->
+                verifyPositions(decoder, false, text("M0ZR4X0#0:560622,24:1246,20:0;0;0*E")));
     }
 
 }
