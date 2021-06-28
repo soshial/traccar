@@ -186,6 +186,9 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                     case 0x82:
                         cpuTemperature = Integer.parseInt(value) * 0.1;
                         break;
+                    case 0x92:
+                        position.set(Position.KEY_IGNITION, Integer.parseInt(value) == 1);
+                        break;
                     case 0x104:
                         position.set(Position.KEY_ENGINE_LOAD, Integer.parseInt(value));
                         break;
