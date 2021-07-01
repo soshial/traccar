@@ -42,19 +42,11 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
     /**
      * Event codes listed here: https://github.com/stanleyhuangyc/Freematics/blob/master/firmware_v5/telelogger/teleclient.h
      *
-     * Example string:
-     * A0QWERT0#EV=7,TS=2206661,ID=A0QWERT0,*33
-     *
-     * @param channel
-     * @param remoteAddress
-     * @param sentence
-     * @return
+     * @param sentence: EV=7,TS=2206661,ID=A0QWERT0,
      */
-    private Object decodeEvent(
-            Channel channel, SocketAddress remoteAddress, String sentence) {
+    private Object decodeEvent(long deviceId, String sentence, Channel channel, SocketAddress remoteAddress) {
 
-        DeviceSession deviceSession = null;
-        Integer event = null;
+        Integer eventId = null;
         String time = null;
 
         for (String pair : sentence.split(",")) {
@@ -62,17 +54,16 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
             String key = data[0];
             String value = data[1];
             switch (key) {
-                case "ID":
-                case "VIN":
-                    if (deviceSession == null) {
-                        deviceSession = getDeviceSession(channel, remoteAddress, value);
-                    }
+                case "ID": // identical to the string before '#' symbol
+                    break;
+                case "VIN": // vehicle ID, not always available to the device
                     break;
                 case "EV":
-                    event = Integer.valueOf(value);
+                    eventId = Integer.valueOf(value);
                     break;
                 case "TS":
-                    // device timer counter in milliseconds
+                    // Device time ticker in milliseconds passed since Arduino board began running the current program.
+                    // This unsigned 32-bit number will overflow (go back to zero) after approximately 50 days.
                     time = value;
                     break;
                 default:
@@ -80,9 +71,9 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
             }
         }
 
-        if (channel != null && deviceSession != null && event != null && time != null) {
-            // traccar must respond to the device to confirm receival
-            String message = String.format("1#EV=%d,RX=1,TS=%s", event, time);
+        if (channel != null && eventId != null && time != null) {
+            // server must respond to the device to confirm receival
+            String message = String.format("1#EV=%d,RX=1,TS=%s", eventId, time);
             message += '*' + Checksum.sum(message);
             channel.writeAndFlush(new NetworkMessage(message, remoteAddress));
         }
@@ -92,20 +83,8 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
 
     /**
      * Freematics Packed Data Format documentation: https://freematics.com/pages/hub/freematics-data-logging-format/
-     *
-     * @param channel
-     * @param remoteAddress
-     * @param sentence
-     * @param id
-     * @return
      */
-    private Object decodePosition(
-            Channel channel, SocketAddress remoteAddress, String sentence, String id) {
-
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, id);
-        if (deviceSession == null) {
-            return null;
-        }
+    private Object decodePosition(long deviceId, String sentence) {
 
         List<Position> positions = new LinkedList<>();
         Position position = null;
@@ -129,7 +108,7 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                     positions.add(position);
                 }
                 position = new Position(getProtocolName());
-                position.setDeviceId(deviceSession.getDeviceId());
+                position.setDeviceId(deviceId);
                 dateBuilder = new DateBuilder(new Date());
             } else if (position != null) {
                 switch (key) {
@@ -229,15 +208,14 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
     }
 
     @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    protected Object decode(Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
         String sentence = (String) msg;
         int startIndex = sentence.indexOf('#');
         int endIndex = sentence.indexOf('*');
 
         if (startIndex > 0 && endIndex > 0) {
-            String id = sentence.substring(0, startIndex);
+            String deviceIdentifier = sentence.substring(0, startIndex); // Example: A0QWERT0
 
             String checkSumReceived = sentence.substring(endIndex + 1);
             String checkSumCalculated = Checksum.sum(sentence.substring(0, endIndex));
@@ -247,10 +225,17 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                 throw new IllegalArgumentException("Corrupted checksum for " + getProtocolName() + ": " + sentence);
             }
 
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, deviceIdentifier);
+            if (deviceSession == null) {
+                return null;
+            }
+
             if (content.startsWith("EV")) {
-                return decodeEvent(channel, remoteAddress, content);
+                // example: A0QWERT0#EV=7,TS=2206661,ID=A0QWERT0,*33
+                return decodeEvent(deviceSession.getDeviceId(), content, channel, remoteAddress);
             } else {
-                return decodePosition(channel, remoteAddress, content, id);
+                // example: M0ZR4X0#0:204391,11:140221,10:8445000,A:49.215920,B:18.737755,C:410,D:0,E:208,24:1252,20:0;0;0,82:47*B5
+                return decodePosition(deviceSession.getDeviceId(), content);
             }
         }
 
