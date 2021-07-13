@@ -27,8 +27,6 @@ import org.traccar.model.Position;
 
 import java.net.SocketAddress;
 import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Freematics API reference: https://freematics.com/pages/hub/api/
@@ -85,10 +83,12 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
      * Freematics Packed Data Format documentation: https://freematics.com/pages/hub/freematics-data-logging-format/
      */
     private Object decodePosition(long deviceId, String sentence) {
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceId);
 
-        List<Position> positions = new LinkedList<>();
-        Position position = null;
-        DateBuilder dateBuilder = null;
+        // time
+        DateBuilder dateBuilder = new DateBuilder();
+        boolean receivedFixTime = false, receivedFixDate = false, receivedDeviceMillis = false;
 
         Double memsTemperature = null;
         Double cpuTemperature = null;
@@ -102,92 +102,92 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                 continue;
             }
             String value = data[1];
-            if (key == 0x0) {
-                if (position != null) {
-                    position.setTime(dateBuilder.getDate());
-                    positions.add(position);
-                }
-                position = new Position(getProtocolName());
-                position.setDeviceId(deviceId);
-                dateBuilder = new DateBuilder(new Date());
-            } else if (position != null) {
-                switch (key) {
-                    case 0x11:
-                        value = ("000000" + value).substring(value.length());
-                        dateBuilder.setDateReverse(
-                                Integer.parseInt(value.substring(0, 2)),
-                                Integer.parseInt(value.substring(2, 4)),
-                                Integer.parseInt(value.substring(4)));
-                        break;
-                    case 0x10:
-                        value = ("00000000" + value).substring(value.length());
-                        dateBuilder.setTime(
-                                Integer.parseInt(value.substring(0, 2)),
-                                Integer.parseInt(value.substring(2, 4)),
-                                Integer.parseInt(value.substring(4, 6)),
-                                Integer.parseInt(value.substring(6)) * 10);
-                        break;
-                    case 0xA:
-                        position.setValid(true);
-                        position.setLatitude(Double.parseDouble(value));
-                        break;
-                    case 0xB:
-                        position.setValid(true);
-                        position.setLongitude(Double.parseDouble(value));
-                        break;
-                    case 0xC:
-                        position.setAltitude(Double.parseDouble(value));
-                        break;
-                    case 0xD:
-                        position.setSpeed(UnitsConverter.knotsFromKph(Double.parseDouble(value)));
-                        break;
-                    case 0xE:
-                        position.setCourse(Integer.parseInt(value));
-                        break;
-                    case 0xF:
-                        position.set(Position.KEY_SATELLITES, Integer.parseInt(value));
-                        break;
-                    case 0x12:
-                        position.set(Position.KEY_HDOP, Integer.parseInt(value));
-                        break;
-                    case 0x20:
-                        position.set(Position.KEY_ACCELERATION, value);
-                        break;
-                    case 0x23:
-                        memsTemperature = Integer.parseInt(value) * 0.1;
-                        break;
-                    case 0x24:
-                        position.set(Position.KEY_BATTERY, Integer.parseInt(value) * 0.01);
-                        break;
-                    case 0x81:
-                        position.set(Position.KEY_RSSI, Integer.parseInt(value));
-                        break;
-                    case 0x82:
-                        cpuTemperature = Integer.parseInt(value) * 0.1;
-                        break;
-                    case 0x92:
-                        position.set(Position.KEY_IGNITION, Integer.parseInt(value) == 1);
-                        break;
-                    case 0x104:
-                        position.set(Position.KEY_ENGINE_LOAD, Integer.parseInt(value));
-                        break;
-                    case 0x105:
-                        position.set(Position.KEY_COOLANT_TEMP, Integer.parseInt(value));
-                        break;
-                    case 0x10c:
-                        position.set(Position.KEY_RPM, Integer.parseInt(value));
-                        break;
-                    case 0x10d:
-                        position.set(Position.KEY_OBD_SPEED, UnitsConverter.knotsFromKph(Integer.parseInt(value)));
-                        break;
-                    case 0x111:
-                        position.set(Position.KEY_THROTTLE, Integer.parseInt(value));
-                        break;
-                    default:
-                        position.set(Position.PREFIX_IO + key, value);
-                        break;
-                }
+            switch (key) {
+                case 0x0:
+                    receivedDeviceMillis = true;
+                    position.setDeviceTime(new Date(Long.parseLong(value)));
+                    break;
+                case 0x11:
+                    receivedFixDate = true;
+                    value = ("000000" + value).substring(value.length());
+                    dateBuilder.setDateReverse(
+                            Integer.parseInt(value.substring(0, 2)),
+                            Integer.parseInt(value.substring(2, 4)),
+                            Integer.parseInt(value.substring(4)));
+                    break;
+                case 0x10:
+                    receivedFixTime = true;
+                    value = ("00000000" + value).substring(value.length());
+                    dateBuilder.setTime(
+                            Integer.parseInt(value.substring(0, 2)),
+                            Integer.parseInt(value.substring(2, 4)),
+                            Integer.parseInt(value.substring(4, 6)),
+                            Integer.parseInt(value.substring(6)) * 10);
+                    break;
+                case 0xA:
+                    position.setValid(true);
+                    position.setLatitude(Double.parseDouble(value));
+                    break;
+                case 0xB:
+                    position.setValid(true);
+                    position.setLongitude(Double.parseDouble(value));
+                    break;
+                case 0xC:
+                    position.setAltitude(Double.parseDouble(value));
+                    break;
+                case 0xD:
+                    position.setSpeed(UnitsConverter.knotsFromKph(Double.parseDouble(value)));
+                    break;
+                case 0xE:
+                    position.setCourse(Integer.parseInt(value));
+                    break;
+                case 0xF:
+                    position.set(Position.KEY_SATELLITES, Integer.parseInt(value));
+                    break;
+                case 0x12:
+                    position.set(Position.KEY_HDOP, Integer.parseInt(value));
+                    break;
+                case 0x20:
+                    position.set(Position.KEY_ACCELERATION, value);
+                    break;
+                case 0x23:
+                    memsTemperature = Integer.parseInt(value) * 0.1;
+                    break;
+                case 0x24:
+                    position.set(Position.KEY_BATTERY, Integer.parseInt(value) * 0.01);
+                    break;
+                case 0x81:
+                    position.set(Position.KEY_RSSI, Integer.parseInt(value));
+                    break;
+                case 0x82:
+                    cpuTemperature = Integer.parseInt(value) * 0.1;
+                    break;
+                case 0x92:
+                    position.set(Position.KEY_IGNITION, Integer.parseInt(value) == 1);
+                    break;
+                case 0x104:
+                    position.set(Position.KEY_ENGINE_LOAD, Integer.parseInt(value));
+                    break;
+                case 0x105:
+                    position.set(Position.KEY_COOLANT_TEMP, Integer.parseInt(value));
+                    break;
+                case 0x10c:
+                    position.set(Position.KEY_RPM, Integer.parseInt(value));
+                    break;
+                case 0x10d:
+                    position.set(Position.KEY_OBD_SPEED, UnitsConverter.knotsFromKph(Integer.parseInt(value)));
+                    break;
+                case 0x111:
+                    position.set(Position.KEY_THROTTLE, Integer.parseInt(value));
+                    break;
+                default:
+                    position.set(Position.PREFIX_IO + key, value);
+                    break;
             }
+        }
+
+        if (!receivedDeviceMillis) {
+            return null;
         }
 
         // MEMS temperature sensor is more accurate, but MEMS might be turned off
@@ -196,15 +196,14 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
             position.set(Position.KEY_DEVICE_TEMP, deviceTemperature);
         }
 
-        if (position != null) {
-            if (!position.getValid()) {
-                getLastLocation(position, null);
-            }
-            position.setTime(dateBuilder.getDate());
-            positions.add(position);
+        if (!position.getValid()) {
+            getLastLocation(position, position.getDeviceTime());
+        }
+        if (receivedFixDate && receivedFixTime) {
+            position.setFixTime(dateBuilder.getDate());
         }
 
-        return positions.isEmpty() ? null : positions;
+        return position;
     }
 
     @Override
@@ -222,7 +221,9 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
             String content = sentence.substring(startIndex + 1, endIndex);
 
             if (!checkSumReceived.equals(checkSumCalculated)) {
-                throw new IllegalArgumentException("Corrupted checksum for " + getProtocolName() + ": " + sentence);
+                throw new IllegalArgumentException(
+                        String.format("Corrupted checksum for %s protocol: should be %s but received %s; received payload: %s",
+                                getProtocolName(), checkSumCalculated, checkSumReceived, sentence));
             }
 
             DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, deviceIdentifier);
