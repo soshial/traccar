@@ -10,6 +10,12 @@ public class MegastekProtocolDecoderTest extends ProtocolTest {
     public void testDecode() throws Exception {
 
         var decoder = new MegastekProtocolDecoder(null);
+        
+        verifyPosition(decoder, text(
+                "$MGV002,860719020193193,,S,070521,160748,V,2255.09165,N,11404.01322,E,00,00,00,,,,,,,,,,,,,,,,,,,10,015,Restart;!"));
+
+        verifyPosition(decoder, text(
+                "$MGV002,860719020193193,,R,070621,115717,V,2255.09165,N,11404.01322,E,00,00,00,99.9,,,,,460,07,262C,0F54,20,,,,,,,,,10,039,Timer;!"));
 
         verifyPosition(decoder, text(
                 "0132$MGV002,869152024261561,,S,310818,133945,V,3814.35442,N,02144.50662,E,00,00,00,99.9,,,44.2,,202,10,,,13,0,0,0,0,90,,,,11,100,Timer;!"));
@@ -39,6 +45,9 @@ public class MegastekProtocolDecoderTest extends ProtocolTest {
         verifyPosition(decoder, text(
                 "$MGV002,869152024446923,869152024446923,S,240816,151631,A,5053.83335,N,00424.05702,E,00,10,00,0.88,2.645,76.09,22.7,,206,01,07D1,6600,28,,,,,,,,,01,100,Timer;!"));
 
+        verifyPosition(decoder, text(
+                "0143$MGV002,869152024261564,,R,220621,120804,V,5152.09429,N,01051.32158,E,00,00,00,99.9,,,,,232,10,A5AE,5A4908,22,0000,0000,0,,,,,,00,093,Timer,,;!"));
+        
         verifyPosition(decoder, text(
                 "STX,013950007137061,$GPRMC,191959.000,A,5203.09602,N,00830.77057,E,5.73,255.27,240716,,,A*62,L,Belt Up,imei:013950007137061,0/5,,Battery=52%,,1,262,03,0084,B20E;FD"));
 

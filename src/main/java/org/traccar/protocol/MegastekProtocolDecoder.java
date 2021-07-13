@@ -141,6 +141,9 @@ public class MegastekProtocolDecoder extends BaseProtocolDecoder {
 
             beginIndex = endIndex + 2;
             endIndex = sentence.indexOf('*', beginIndex) + 3;
+            if (endIndex < 0) {
+                return null;
+            }
             location = sentence.substring(beginIndex, endIndex);
 
             beginIndex = endIndex + 1;
@@ -243,13 +246,13 @@ public class MegastekProtocolDecoder extends BaseProtocolDecoder {
             .number("dd,")
             .number("(dd),")                     // satellites
             .number("dd,")
-            .number("(d+.d+),")                  // hdop
+            .number("(d+.d+)?,")                 // hdop
             .number("(d+.d+)?,")                 // speed
             .number("(d+.d+)?,")                 // course
-            .number("(-?d+.d+),")                // altitude
+            .number("(-?d+.d+)?,")               // altitude
             .number("(d+.d+)?,")                 // odometer
-            .number("(d+),")                     // mcc
-            .number("(d+),")                     // mnc
+            .number("(d+)?,")                    // mcc
+            .number("(d+)?,")                    // mnc
             .number("(xxxx)?,")                  // lac
             .number("(x+)?,")                    // cid
             .number("(d+)?,")                    // gsm
@@ -318,17 +321,19 @@ public class MegastekProtocolDecoder extends BaseProtocolDecoder {
             position.set(Position.KEY_ODOMETER, parser.nextDouble(0) * 1000);
         }
 
-        int mcc = parser.nextInt();
-        int mnc = parser.nextInt();
-        Integer lac = parser.nextHexInt();
-        Integer cid = parser.nextHexInt();
-        Integer rssi = parser.nextInt();
-        if (lac != null && cid != null) {
-            CellTower tower = CellTower.from(mcc, mnc, lac, cid);
-            if (rssi != null) {
-                tower.setSignalStrength(rssi);
+        if (parser.hasNext(5)) {
+            int mcc = parser.nextInt();
+            int mnc = parser.nextInt();
+            Integer lac = parser.nextHexInt();
+            Integer cid = parser.nextHexInt();
+            Integer rssi = parser.nextInt();
+            if (lac != null && cid != null) {
+                CellTower tower = CellTower.from(mcc, mnc, lac, cid);
+                if (rssi != null) {
+                    tower.setSignalStrength(rssi);
+                }
+                position.setNetwork(new Network(tower));
             }
-            position.setNetwork(new Network(tower));
         }
 
         if (parser.hasNext(5)) {

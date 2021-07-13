@@ -759,6 +759,13 @@ public final class Keys {
             Collections.singletonList(KeyType.GLOBAL));
 
     /**
+     * Telegram notification send location message.
+     */
+    public static final ConfigKey<Boolean> NOTIFICATOR_TELEGRAM_SEND_LOCATION = new ConfigKey<>(
+            "notificator.telegram.sendLocation",
+            Collections.singletonList(KeyType.GLOBAL));
+
+    /**
      * Maximum time period for reports in seconds. Can be useful to prevent users to request unreasonably long reports.
      * By default there is no limit.
      */
@@ -1189,6 +1196,13 @@ public final class Keys {
      */
     public static final ConfigKey<String> WEB_SAME_SITE_COOKIE = new ConfigKey<>(
             "web.sameSiteCookie",
+            Collections.singletonList(KeyType.GLOBAL));
+
+    /**
+     * Enables persisting Jetty session to the database
+     */
+    public static final ConfigKey<Boolean> WEB_PERSIST_SESSION = new ConfigKey<>(
+            "web.persistSession",
             Collections.singletonList(KeyType.GLOBAL));
 
     /**
