@@ -45,7 +45,7 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
     private Object decodeEvent(long deviceId, String sentence, Channel channel, SocketAddress remoteAddress) {
 
         Integer eventId = null;
-        String time = null;
+        Long timeMillis = null;
 
         for (String pair : sentence.split(",")) {
             String[] data = pair.split("=");
@@ -62,18 +62,39 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                 case "TS":
                     // Device time ticker in milliseconds passed since Arduino board began running the current program.
                     // This unsigned 32-bit number will overflow (go back to zero) after approximately 50 days.
-                    time = value;
+                    timeMillis = Long.parseLong(value);
                     break;
                 default:
                     break;
             }
         }
 
-        if (channel != null && eventId != null && time != null) {
+        if (channel != null && eventId != null && timeMillis != null) {
             // server must respond to the device to confirm receival
-            String message = String.format("1#EV=%d,RX=1,TS=%s", eventId, time);
+            String message = String.format("1#EV=%d,RX=1,TS=%d,TM=%d", eventId, timeMillis, System.currentTimeMillis() / 1000);
             message += '*' + Checksum.sum(message);
             channel.writeAndFlush(new NetworkMessage(message, remoteAddress));
+
+            Position position = null;
+            switch (eventId) {
+                case 1: // EVENT_LOGIN
+                case 2: // EVENT_LOGOUT
+                case 3: // EVENT_SYNC
+                case 4: // EVENT_RECONNECT
+                case 5: // EVENT_COMMAND
+                case 6: // EVENT_ACK
+                case 7: // EVENT_PING
+                    break;
+                case 8: // EVENT_LOW_BATTERY
+                    position = new Position(getProtocolName());
+                    position.setDeviceId(deviceId);
+                    getLastLocation(position, new Date(timeMillis));
+                    position.set(Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
+                    break;
+                default:
+                    return null;
+            }
+            return position;
         }
 
         return null;
