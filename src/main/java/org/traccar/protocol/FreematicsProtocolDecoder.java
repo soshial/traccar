@@ -45,7 +45,7 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
     private Object decodeEvent(long deviceId, String sentence, Channel channel, SocketAddress remoteAddress) {
 
         Integer eventId = null;
-        Long timeMillis = null;
+        Long deviceTickerCounterMs = null;
 
         for (String pair : sentence.split(",")) {
             String[] data = pair.split("=");
@@ -61,17 +61,22 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                     break;
                 case "TS":
                     // Device time ticker in milliseconds passed since Arduino board began running the current program.
-                    // This unsigned 32-bit number will overflow (go back to zero) after approximately 50 days.
-                    timeMillis = Long.parseLong(value);
+                    // This unsigned 32-bit number will rollover (overflow, i.e. go back to zero) after approximately 50 days.
+                    // For this reason, it can't be used for dates.
+                    // https://www.arduino.cc/reference/en/language/functions/time/millis/
+                    deviceTickerCounterMs = Long.parseLong(value);
                     break;
                 default:
                     break;
             }
         }
 
-        if (channel != null && eventId != null && timeMillis != null) {
-            // server must respond to the device to confirm receival
-            String message = String.format("1#EV=%d,RX=1,TS=%d,TM=%d", eventId, timeMillis, System.currentTimeMillis() / 1000);
+        if (channel != null && eventId != null && deviceTickerCounterMs != null) {
+            // The server must respond to the device to confirm receival
+            String message = String.format("1#EV=%d,RX=1,TS=%d,TM=%d", eventId, deviceTickerCounterMs, System.currentTimeMillis() / 1000L);
+            // TM= is an undocumented parameter; it is a Unix timestamp (of current server time), in seconds
+            // Timestamp should be passed, so that the tracking device could sync time on EVENT_LOGIN
+            // https://github.com/stanleyhuangyc/Freematics/blob/b8d7604bb61fb51e72aa292984bde04e637ea86d/firmware_v5/telelogger/teleclient.cpp#L211
             message += '*' + Checksum.sum(message);
             channel.writeAndFlush(new NetworkMessage(message, remoteAddress));
 
@@ -88,7 +93,7 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                 case 8: // EVENT_LOW_BATTERY
                     position = new Position(getProtocolName());
                     position.setDeviceId(deviceId);
-                    getLastLocation(position, new Date(timeMillis));
+                    getLastLocation(position, new Date(deviceTickerCounterMs));
                     position.set(Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
                     break;
                 default:
@@ -109,7 +114,8 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
 
         // time
         DateBuilder dateBuilder = new DateBuilder();
-        boolean receivedFixTime = false, receivedFixDate = false, receivedDeviceMillis = false;
+        boolean receivedFixTime = false, receivedFixDate = false, receivedDeviceTicker = false;
+        long deviceLocalTimeMs = 0;
 
         Double memsTemperature = null;
         Double cpuTemperature = null;
@@ -125,8 +131,14 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
             String value = data[1];
             switch (key) {
                 case 0x0:
-                    receivedDeviceMillis = true;
-                    position.setDeviceTime(new Date(Long.parseLong(value)));
+                    // see comment on line 63
+                    receivedDeviceTicker = true;
+                    break;
+                case 0x1:
+                    deviceLocalTimeMs += Long.parseLong(value) * 1000L;
+                    break;
+                case 0x2:
+                    deviceLocalTimeMs += Integer.parseInt(value);
                     break;
                 case 0x11:
                     receivedFixDate = true;
@@ -207,8 +219,12 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
             }
         }
 
-        if (!receivedDeviceMillis) {
+        if (!receivedDeviceTicker) {
             return null;
+        }
+
+        if (deviceLocalTimeMs > 1000) {
+            position.setDeviceTime(new Date(deviceLocalTimeMs));
         }
 
         // MEMS temperature sensor is more accurate, but MEMS might be turned off

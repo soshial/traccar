@@ -161,6 +161,9 @@ public class Position extends Message {
         this.protocol = protocol;
     }
 
+    /**
+     * The time, when this Position was received by server
+     */
     private Date serverTime = new Date();
 
     public Date getServerTime() {
@@ -171,6 +174,9 @@ public class Position extends Message {
         this.serverTime = serverTime;
     }
 
+    /**
+     * The time when position/data/payload were gathered on device.
+     */
     private Date deviceTime;
 
     public Date getDeviceTime() {
@@ -181,6 +187,9 @@ public class Position extends Message {
         this.deviceTime = deviceTime;
     }
 
+    /**
+     * The GPS time of position data registered by a tracking device.
+     */
     private Date fixTime;
 
     public Date getFixTime() {
