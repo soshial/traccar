@@ -38,7 +38,8 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
     }
 
     /**
-     * Event codes listed here: https://github.com/stanleyhuangyc/Freematics/blob/master/firmware_v5/telelogger/teleclient.h
+     * Event codes listed here:
+     * https://github.com/stanleyhuangyc/Freematics/blob/master/firmware_v5/telelogger/teleclient.h
      *
      * @param sentence: EV=7,TS=2206661,ID=A0QWERT0,
      */
@@ -61,7 +62,7 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                     break;
                 case "TS":
                     // Device time ticker in milliseconds passed since Arduino board began running the current program.
-                    // This unsigned 32-bit number will rollover (overflow, i.e. go back to zero) after approximately 50 days.
+                    // This unsigned 32-bit number will rollover (overflow, i.e. go back to zero) after ~50 days.
                     // For this reason, it can't be used for dates.
                     // https://www.arduino.cc/reference/en/language/functions/time/millis/
                     deviceTickerCounterMs = Long.parseLong(value);
@@ -73,10 +74,11 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
 
         if (channel != null && eventId != null && deviceTickerCounterMs != null) {
             // The server must respond to the device to confirm receival
-            String message = String.format("1#EV=%d,RX=1,TS=%d,TM=%d", eventId, deviceTickerCounterMs, System.currentTimeMillis() / 1000L);
+            long timestampNow = System.currentTimeMillis() / 1000L;
+            String message = String.format("1#EV=%d,RX=1,TS=%d,TM=%d", eventId, deviceTickerCounterMs, timestampNow);
             // TM= is an undocumented parameter; it is a Unix timestamp (of current server time), in seconds
             // Timestamp should be passed, so that the tracking device could sync time on EVENT_LOGIN
-            // https://github.com/stanleyhuangyc/Freematics/blob/b8d7604bb61fb51e72aa292984bde04e637ea86d/firmware_v5/telelogger/teleclient.cpp#L211
+            // https://github.com/stanleyhuangyc/Freematics/blob/b8d7604bb61f/firmware_v5/telelogger/teleclient.cpp#L211
             message += '*' + Checksum.sum(message);
             channel.writeAndFlush(new NetworkMessage(message, remoteAddress));
 
@@ -258,9 +260,10 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
             String content = sentence.substring(startIndex + 1, endIndex);
 
             if (!checkSumReceived.equals(checkSumCalculated)) {
-                throw new IllegalArgumentException(
-                        String.format("Corrupted checksum for %s protocol: should be %s but received %s; received payload: %s",
-                                getProtocolName(), checkSumCalculated, checkSumReceived, sentence));
+                throw new IllegalArgumentException(String.format(
+                        "Corrupted checksum for %s protocol: should be %s but received %s; received payload: %s",
+                        getProtocolName(), checkSumCalculated, checkSumReceived, sentence)
+                );
             }
 
             DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, deviceIdentifier);
@@ -272,7 +275,7 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                 // example: A0QWERT0#EV=7,TS=2206661,ID=A0QWERT0,*33
                 return decodeEvent(deviceSession.getDeviceId(), content, channel, remoteAddress);
             } else {
-                // example: M0ZR4X0#0:204391,11:140221,10:8445000,A:49.215920,B:18.737755,C:410,D:0,E:208,24:1252,20:0;0;0,82:47*B5
+                // example: M0ZR4X0#0:204391,11:140221,10:8445000,A:49.215920,B:18.737755,24:1252,20:0;0;0,82:47*B5
                 return decodePosition(deviceSession.getDeviceId(), content);
             }
         }
