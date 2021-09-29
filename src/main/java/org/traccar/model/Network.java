@@ -20,6 +20,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.ArrayList;
 import java.util.Collection;
 
+/**
+ * This class contains cell tower and Wi-Fi network information. Traccar can use this information to determine
+ * approximate location (when GPS is not available) via location-based service (LBS) providers.
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Network {
 

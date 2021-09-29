@@ -23,6 +23,8 @@ import org.traccar.Protocol;
 import org.traccar.helper.Checksum;
 import org.traccar.helper.DateBuilder;
 import org.traccar.helper.UnitsConverter;
+import org.traccar.model.CellTower;
+import org.traccar.model.Network;
 import org.traccar.model.Position;
 
 import java.net.SocketAddress;
@@ -119,8 +121,14 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
         boolean receivedFixTime = false, receivedFixDate = false, receivedDeviceTicker = false;
         long deviceLocalTimeMs = 0;
 
+        // cell tower
+        CellTower cellTower = new CellTower();
+        boolean receivedCellInfo = false;
+
         Double memsTemperature = null;
         Double cpuTemperature = null;
+
+        position.setNetwork(new Network(cellTower));
 
         for (String pair : sentence.split(",")) {
             String[] data = pair.split("[=:]");
@@ -191,8 +199,25 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                 case 0x24:
                     position.set(Position.KEY_BATTERY, Integer.parseInt(value) * 0.01);
                     break;
-                case 0x81:
-                    position.set(Position.KEY_RSSI, Integer.parseInt(value));
+                case 0x40:
+                    cellTower.setSignalStrength(Integer.parseInt(value));
+                    receivedCellInfo = true;
+                    break;
+                case 0x41:
+                    cellTower.setMobileCountryCode(Integer.parseInt(value));
+                    receivedCellInfo = true;
+                    break;
+                case 0x42:
+                    cellTower.setMobileNetworkCode(Integer.parseInt(value));
+                    receivedCellInfo = true;
+                    break;
+                case 0x43:
+                    cellTower.setLocationAreaCode(Integer.parseInt(value));
+                    receivedCellInfo = true;
+                    break;
+                case 0x44:
+                    cellTower.setCellId(Long.parseLong(value));
+                    receivedCellInfo = true;
                     break;
                 case 0x82:
                     cpuTemperature = Integer.parseInt(value) * 0.1;
@@ -227,6 +252,10 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
 
         if (deviceLocalTimeMs > 1000) {
             position.setDeviceTime(new Date(deviceLocalTimeMs));
+        }
+
+        if (receivedCellInfo) {
+            position.setNetwork(new Network(cellTower));
         }
 
         // MEMS temperature sensor is more accurate, but MEMS might be turned off

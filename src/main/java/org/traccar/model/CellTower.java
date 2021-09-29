@@ -57,6 +57,11 @@ public class CellTower {
         this.radioType = radioType;
     }
 
+    /**
+     * A valid CID ranges:<br/>
+     * - from 0 to 65535 (2^16−1) on GSM and CDMA networks<br/>
+     * - from 0 to 268,435,455 (2^28−1) on UMTS and LTE networks.
+     */
     private Long cellId;
 
     public Long getCellId() {
@@ -67,6 +72,9 @@ public class CellTower {
         this.cellId = cellId;
     }
 
+    /**
+     * Unsigned 16-bit number
+     */
     private Integer locationAreaCode;
 
     public Integer getLocationAreaCode() {
@@ -97,6 +105,9 @@ public class CellTower {
         this.mobileNetworkCode = mobileNetworkCode;
     }
 
+    /**
+     * Signal strength in dBm
+     */
     private Integer signalStrength;
 
     public Integer getSignalStrength() {

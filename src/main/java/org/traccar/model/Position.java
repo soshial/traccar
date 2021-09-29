@@ -296,6 +296,9 @@ public class Position extends Message {
         this.accuracy = accuracy;
     }
 
+    /**
+     * Cell towers and Wi-Fi networks, that were in the vicinity, when Position was saved.
+     */
     private Network network;
 
     public Network getNetwork() {
