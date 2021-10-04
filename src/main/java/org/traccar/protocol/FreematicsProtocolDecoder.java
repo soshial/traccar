@@ -128,8 +128,6 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
         Double memsTemperature = null;
         Double cpuTemperature = null;
 
-        position.setNetwork(new Network(cellTower));
-
         for (String pair : sentence.split(",")) {
             String[] data = pair.split("[=:]");
             int key;
@@ -145,10 +143,12 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                     receivedDeviceTicker = true;
                     break;
                 case 0x1:
-                    deviceLocalTimeMs += Long.parseLong(value) * 1000L;
+                    long timestampSec = Long.parseLong(value);
+                    deviceLocalTimeMs += timestampSec * 1000L;
                     break;
                 case 0x2:
-                    deviceLocalTimeMs += Integer.parseInt(value);
+                    int timestampMicrosec = Integer.parseInt(value);
+                    deviceLocalTimeMs += timestampMicrosec / 1000L;
                     break;
                 case 0x11:
                     receivedFixDate = true;
