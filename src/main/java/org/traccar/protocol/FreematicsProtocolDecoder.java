@@ -49,6 +49,7 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
 
         Integer eventId = null;
         Long deviceTickerCounterMs = null;
+        Date deviceTime = null;
 
         for (String pair : sentence.split(",")) {
             String[] data = pair.split("=");
@@ -69,6 +70,10 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                     // https://www.arduino.cc/reference/en/language/functions/time/millis/
                     deviceTickerCounterMs = Long.parseLong(value);
                     break;
+                case "TM":
+                    // device timestamp in seconds (received from TM&TN params)
+                    deviceTime = new Date(Long.parseLong(value) * 1000);
+                    break;
                 default:
                     break;
             }
@@ -76,8 +81,10 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
 
         if (channel != null && eventId != null && deviceTickerCounterMs != null) {
             // The server must respond to the device to confirm receival
-            long timestampNow = System.currentTimeMillis() / 1000L;
-            String message = String.format("1#EV=%d,RX=1,TS=%d,TM=%d", eventId, deviceTickerCounterMs, timestampNow);
+            long timestampSec = System.currentTimeMillis() / 1000L;
+            long timestampMicrosec = System.currentTimeMillis() % 1000L * 1000L;
+            String message = String.format("1#EV=%d,RX=1,TS=%d,TM=%d,TN=%d", eventId, deviceTickerCounterMs,
+                    timestampSec, timestampMicrosec);
             // TM= is an undocumented parameter; it is a Unix timestamp (of current server time), in seconds
             // Timestamp should be passed, so that the tracking device could sync time on EVENT_LOGIN
             // https://github.com/stanleyhuangyc/Freematics/blob/b8d7604bb61f/firmware_v5/telelogger/teleclient.cpp#L211
@@ -97,7 +104,9 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                 case 8: // EVENT_LOW_BATTERY
                     position = new Position(getProtocolName());
                     position.setDeviceId(deviceId);
-                    getLastLocation(position, new Date(deviceTickerCounterMs));
+                    if (deviceTime != null) {
+                        getLastLocation(position, deviceTime);
+                    }
                     position.set(Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
                     break;
                 default:
@@ -119,7 +128,7 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
         // time
         DateBuilder dateBuilder = new DateBuilder();
         boolean receivedFixTime = false, receivedFixDate = false, receivedDeviceTicker = false;
-        long deviceLocalTimeMs = 0;
+        long deviceLocalTimeMs = 0; // from TM and TN params
 
         // cell tower
         CellTower cellTower = new CellTower();
