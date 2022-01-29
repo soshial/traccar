@@ -11,6 +11,15 @@ public class DmtHttpProtocolDecoderTest extends ProtocolTest {
 
         var decoder = new DmtHttpProtocolDecoder(null);
 
+        verifyAttributes(decoder, request(HttpMethod.POST, "/",
+                buffer("{\"date\":\"2021-12-12T16:04:52Z\",\"device\":{\"sn\":\"416581\",\"prod\":85,\"rev\":1,\"fw\":\"1.12\",\"iccid\":\"89011702278612797427\",\"imei\":\"351358810439486\"},\"sqn\":1549,\"reason\":42,\"counters\":[{\"id\":0,\"val\":5304},{\"id\":3,\"val\":3200},{\"id\":4,\"val\":5066},{\"id\":128,\"val\":1},{\"id\":129,\"val\":8},{\"id\":130,\"val\":0},{\"id\":131,\"val\":0},{\"id\":132,\"val\":0},{\"id\":134,\"val\":1},{\"id\":138,\"val\":0},{\"id\":139,\"val\":36},{\"id\":142,\"val\":1629023},{\"id\":145,\"val\":0},{\"id\":146,\"val\":1}]}")));
+
+        verifyAttributes(decoder, request(HttpMethod.POST, "/",
+                buffer("{\"date\":\"2021-10-04T18:15:47Z\",\"device\":{\"sn\":\"403809\",\"prod\":85,\"rev\":1,\"fw\":\"1.12\",\"iccid\":\"89011702278483601922\",\"imei\":\"352656106127312\"},\"sqn\":40927,\"reason\":11,\"analogues\":[{\"id\":1,\"val\":4265},{\"id\":3,\"val\":3800},{\"id\":4,\"val\":12},{\"id\":5,\"val\":4251}],\"inputs\":1,\"outputs\":0,\"status\":137}")));
+
+        verifyPosition(decoder, request(HttpMethod.POST, "/",
+                buffer("{\"date\":\"2021-10-04T18:14:55Z\",\"device\":{\"sn\":\"403809\",\"prod\":85,\"rev\":1,\"fw\":\"1.12\",\"iccid\":\"89011702278483601922\",\"imei\":\"352656106127312\"},\"sqn\":40925,\"reason\":1,\"lat\":26.87366,\"lng\":-80.10618,\"posAcc\":47.7,\"posInfo\":{\"GDOP\":4.68,\"BSat\":2,\"GSat\":4,\"Src\":1},\"analogues\":[{\"id\":1,\"val\":4265},{\"id\":3,\"val\":3800},{\"id\":4,\"val\":16},{\"id\":5,\"val\":4255}],\"inputs\":1,\"outputs\":0,\"status\":137}")));
+
         verifyPosition(decoder, request(HttpMethod.POST, "/",
                 buffer("{ \"date\": \"2021-04-20T11:10:03.702659861Z\", \"device\":{ \"sn\": \"0016C001F000ABEC\", \"prod\": 0.2, \"rev\": 0.3, \"fw\": \"1.1\", \"module\": \"LR 34.3.3\", \"iccid\": \"89610180000000000000\", \"imei\": \"354043000000000\" }, \"sqn\": 347263802, \"reason\":3, \"lat\": 1.1, \"lng\": 2.2, \"posAcc\": 30.1, \"posInfo\":{ \"HDOP\": 0.1, \"PDOP\": 0.2, \"GDOP\": 0.3, \"BSat\":1, \"GSat\":2, \"Src\":2 }, \"analogues\":[{ \"id\":1, \"val\": 300 },{ \"id\":2, \"val\": 500} ], \"inputs\": 5001, \"outputs\":0, \"status\": 17, \"counters\":[{ \"id\": 11, \"val\": 43 },{ \"id\": 23, \"val\": 8800} ], \"lora\":{ \"dev_id\": \"yabby-abec\", \"app_id\": \"digital-matter\", \"dev_addr\": \"260B567A\", \"gw\": [ { \"id\": \"dm-sentrius\", \"snr\": 10, \"rssi\": -36 } ] }}")));
 

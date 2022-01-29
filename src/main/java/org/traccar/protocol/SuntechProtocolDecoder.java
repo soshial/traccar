@@ -161,7 +161,7 @@ public class SuntechProtocolDecoder extends BaseProtocolDecoder {
             case 7:
                 return Position.ALARM_MOVEMENT;
             case 8:
-                return Position.ALARM_SHOCK;
+                return Position.ALARM_VIBRATION;
             default:
                 return null;
         }
@@ -178,7 +178,7 @@ public class SuntechProtocolDecoder extends BaseProtocolDecoder {
             case 14:
                 return Position.ALARM_LOW_BATTERY;
             case 15:
-                return Position.ALARM_SHOCK;
+                return Position.ALARM_VIBRATION;
             case 16:
                 return Position.ALARM_ACCIDENT;
             case 40:
@@ -461,9 +461,11 @@ public class SuntechProtocolDecoder extends BaseProtocolDecoder {
         position.setDeviceId(deviceSession.getDeviceId());
         position.set(Position.KEY_TYPE, type);
 
-        int mask = Integer.parseInt(values[index++], 16);
+        int mask;
         if (type.equals("BLE")) {
             mask = 0b1100000110110;
+        } else {
+            mask = Integer.parseInt(values[index++], 16);
         }
 
         if (BitUtil.check(mask, 1)) {
@@ -518,7 +520,6 @@ public class SuntechProtocolDecoder extends BaseProtocolDecoder {
             position.setValid(true);
 
             int count = Integer.parseInt(values[index++]);
-            index += 1;
 
             for (int i = 1; i <= count; i++) {
                 position.set("tag" + i + "Rssi", Integer.parseInt(values[index++]));

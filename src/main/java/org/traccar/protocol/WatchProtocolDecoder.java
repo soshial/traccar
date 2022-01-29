@@ -89,6 +89,8 @@ public class WatchProtocolDecoder extends BaseProtocolDecoder {
             return Position.ALARM_GEOFENCE_EXIT;
         } else if (BitUtil.check(status, 2)) {
             return Position.ALARM_GEOFENCE_ENTER;
+        } else if (BitUtil.check(status, 14)) {
+            return Position.ALARM_POWER_CUT;
         } else if (BitUtil.check(status, 16)) {
             return Position.ALARM_SOS;
         } else if (BitUtil.check(status, 17)) {
@@ -143,8 +145,8 @@ public class WatchProtocolDecoder extends BaseProtocolDecoder {
 
         int cellCount = Integer.parseInt(values[index++]);
         index += 1; // timing advance
-        int mcc = Integer.parseInt(values[index++]);
-        int mnc = Integer.parseInt(values[index++]);
+        int mcc = !values[index].isEmpty() ? Integer.parseInt(values[index++]) : 0;
+        int mnc = !values[index].isEmpty() ? Integer.parseInt(values[index++]) : 0;
 
         for (int i = 0; i < cellCount; i++) {
             network.addCellTower(CellTower.from(mcc, mnc,
