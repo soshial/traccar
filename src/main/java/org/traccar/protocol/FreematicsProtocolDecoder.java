@@ -43,7 +43,7 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
      * Event codes listed here:
      * https://github.com/stanleyhuangyc/Freematics/blob/master/firmware_v5/telelogger/teleclient.h
      *
-     * @param sentence: EV=7,TS=2206661,ID=A0QWERT0,
+     * @param sentence: EV=7,TS=2206661,ID=A0QWERT0,TM=1643449047
      */
     private Object decodeEvent(long deviceId, String sentence, Channel channel, SocketAddress remoteAddress) {
 
@@ -101,13 +101,13 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                 case 6: // EVENT_ACK
                 case 7: // EVENT_PING
                     break;
-                case 8: // EVENT_LOW_BATTERY
+                case 8: // EVENT_LOW_POWER
                     position = new Position(getProtocolName());
                     position.setDeviceId(deviceId);
                     if (deviceTime != null) {
                         getLastLocation(position, deviceTime);
                     }
-                    position.set(Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
+                    position.set(Position.KEY_ALARM, Position.ALARM_LOW_POWER);
                     break;
                 default:
                     return null;
@@ -206,7 +206,7 @@ public class FreematicsProtocolDecoder extends BaseProtocolDecoder {
                     memsTemperature = Integer.parseInt(value) * 0.1;
                     break;
                 case 0x24:
-                    position.set(Position.KEY_BATTERY, Integer.parseInt(value) * 0.01);
+                    position.set(Position.KEY_POWER, Integer.parseInt(value) * 0.01);
                     break;
                 case 0x40:
                     cellTower.setSignalStrength(Integer.parseInt(value));
