@@ -1,6 +1,6 @@
 package org.traccar.protocol;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.traccar.ProtocolTest;
 import org.traccar.model.Position;
 
@@ -9,13 +9,66 @@ public class Gt06ProtocolDecoderTest extends ProtocolTest {
     @Test
     public void testDecode() throws Exception {
 
-        var decoder = new Gt06ProtocolDecoder(null);
+        var decoder = inject(new Gt06ProtocolDecoder(null));
 
         verifyNull(decoder, binary(
                 "787805120099abec0d0a"));
 
         verifyNull(decoder, binary(
                 "78780D01086471700328358100093F040D0A"));
+
+        verifyAttribute(decoder, binary(
+                "78782912170316053b3bcf015b51220af1201105d56100000000000000000000869c0130010000000238d1af0d0a"),
+                Position.KEY_DRIVING_TIME, 0);
+
+        verifyAttribute(decoder, binary(
+                "78781219012ed042cc00954d00040419000056fe290d0a"),
+                Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
+
+        verifyAttribute(decoder, binary(
+                "78782DA4150817073B10CF032EEA9C0B6CE0800015141001CC0100009A00000000000A6F24014605041900FF01908A640D0A"),
+                Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
+
+        verifyAttribute(decoder, binary(
+                "78782627100419092D07C5027AC91C0C4658000005370900000000000000008002001900FF00004DF60D0A"),
+                Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
+
+        verifyPosition(decoder, binary(
+                "78781511170103100e1f9904efe30400a97f88003410ffdd000d0a"));
+
+        verifyAttribute(decoder, binary(
+                "787819a5012ed0000075df000000000098661502050413000019a12b0d0a"),
+                Position.KEY_ALARM, Position.ALARM_TAMPERING);
+
+        verifyAttribute(decoder, binary(
+                "7878131302801900002e42016f000000003a0177ef180d0a"),
+                Position.KEY_POWER, 3.67);
+
+        verifyAttribute(decoder, binary(
+                "78782526160913063918c002780fab0c44750f00040008027f14084c0038420600030c020007398e0d0a"),
+                Position.KEY_ALARM, Position.ALARM_TAMPERING);
+
+        verifyAttribute(decoder, binary(
+                "7979000d940516090908081c030defbd2d0d0a"),
+                Position.KEY_DOOR, true);
+
+        verifyAttribute(decoder, binary(
+                "78782516160908063736c0006e70110442fc800000000800000000000000000300002512000473fb0d0a"),
+                Position.KEY_ALARM, Position.ALARM_TAMPERING);
+
+        verifyPosition(decoder, binary(
+                "78782e2416061a103600c80275298404a0a24000184602d4023a49006f060104ed01940000086508004139765000be7d640d0a"));
+
+        verifyAttribute(decoder, binary(
+                "79790019941b524649443a3030384642324245424133390d0a000c14930d0a"),
+                "serial", "RFID:008FB2BEBA39");
+
+        verifyAttribute(decoder, binary(
+                "7878241216040e102c22cf00915ffb04c6016300195a02d402283b00753f400571040001dda4880d0a"),
+                Position.KEY_IGNITION, false);
+
+        verifyNotNull(decoder, binary(
+                "787831241603060c231e000194620213ee00606a3413ee0060692e000000000000000000000000000000000000000000003a0cb70d0a"));
 
         verifyNotNull(decoder, binary(
                 "78783B2810010D02020201CC00287D001F713E287D001F7231287D001E232D287D001F4018000000000000000000000000000000000000FF00020005B14B0D0A"));

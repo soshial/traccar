@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 - 2021 Anton Tananaev (anton@traccar.org)
+ * Copyright 2013 - 2022 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
-import org.traccar.Context;
-import org.traccar.DeviceSession;
+import org.traccar.session.DeviceSession;
 import org.traccar.NetworkMessage;
 import org.traccar.Protocol;
 import org.traccar.helper.DataConverter;
@@ -50,6 +49,7 @@ public class RuptelaProtocolDecoder extends BaseProtocolDecoder {
     public static final int MSG_SMS_VIA_GPRS_RESPONSE = 7;
     public static final int MSG_SMS_VIA_GPRS = 8;
     public static final int MSG_DTCS = 9;
+    public static final int MSG_IDENTIFICATION = 15;
     public static final int MSG_SET_IO = 17;
     public static final int MSG_FILES = 37;
     public static final int MSG_EXTENDED_RECORDS = 68;
@@ -297,11 +297,23 @@ public class RuptelaProtocolDecoder extends BaseProtocolDecoder {
                     Position position = new Position(getProtocolName());
                     position.setDeviceId(deviceSession.getDeviceId());
                     getLastLocation(position, null);
-                    position.set(Position.KEY_IMAGE, Context.getMediaManager().writeFile(imei, photo, "jpg"));
+                    position.set(Position.KEY_IMAGE, writeMediaFile(imei, photo, "jpg"));
                     photo.release();
                     photo = null;
                     return position;
                 }
+            }
+
+            return null;
+
+        } else if (type == MSG_IDENTIFICATION) {
+
+            ByteBuf content = Unpooled.buffer();
+            content.writeByte(1);
+            ByteBuf response = RuptelaProtocolEncoder.encodeContent(type, content);
+            content.release();
+            if (channel != null) {
+                channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
             }
 
             return null;

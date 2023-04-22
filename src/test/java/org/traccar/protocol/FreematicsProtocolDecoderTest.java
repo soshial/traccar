@@ -1,7 +1,7 @@
 package org.traccar.protocol;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.traccar.ProtocolTest;
 
 public class FreematicsProtocolDecoderTest extends ProtocolTest {
@@ -9,7 +9,7 @@ public class FreematicsProtocolDecoderTest extends ProtocolTest {
     @Test
     public void testDecode() throws Exception {
 
-        var decoder = new FreematicsProtocolDecoder(null);
+        var decoder = inject(new FreematicsProtocolDecoder(null));
 
         verifyPosition(decoder, text(
                 "M0ZR4X0#0:204391,11:140221,10:8445000,A:49.215920,B:18.737755,C:410,D:0,E:208,24:1252,20:0;0;0,82:47*B5"));
@@ -45,11 +45,11 @@ public class FreematicsProtocolDecoderTest extends ProtocolTest {
         var decoder = new FreematicsProtocolDecoder(null);
 
         // wrong checksum
-        Assert.assertThrows(IllegalArgumentException.class, () ->
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
                 verifyPosition(decoder, text("M0ZR4X0#0:566624,24:1246,20:0;0;0*17")));
 
         // should be *0E
-        Assert.assertThrows(IllegalArgumentException.class, () ->
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
                 verifyPosition(decoder, text("M0ZR4X0#0:560622,24:1246,20:0;0;0*E")));
     }
 

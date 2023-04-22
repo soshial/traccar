@@ -17,7 +17,7 @@ package org.traccar.protocol;
 
 import io.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
-import org.traccar.DeviceSession;
+import org.traccar.session.DeviceSession;
 import org.traccar.Protocol;
 import org.traccar.helper.BitUtil;
 import org.traccar.helper.Parser;
@@ -74,26 +74,32 @@ public class StartekProtocolDecoder extends BaseProtocolDecoder {
             .groupBegin()
             .text(",")
             .number("d,")                        // extended
-            .expression("([^,]+)?,")             // fuel
+            .expression("([^,]+)?")              // fuel
+            .groupBegin()
+            .text(",")
             .expression("([^,]+)?")              // temperature
             .groupBegin()
             .text(",")
-            .number("(d+)|")                     // rpm
-            .number("(d+)|")                     // engine load
-            .number("d+|")                       // maf flow
-            .number("d+|")                       // intake pressure
-            .number("d+|")                       // intake temperature
-            .number("(d+)|")                     // throttle
-            .number("(d+)|")                     // coolant temperature
-            .number("(d+)|")                     // instant fuel
-            .number("(d+)")                      // fuel level
+            .groupBegin()
+            .number("(d+)?|")                    // rpm
+            .number("(d+)?|")                    // engine load
+            .number("(d+)?|")                    // maf flow
+            .number("(d+)?|")                    // intake pressure
+            .number("(d+)?|")                    // intake temperature
+            .number("(d+)?|")                    // throttle
+            .number("(d+)?|")                    // coolant temperature
+            .number("(d+)?|")                    // instant fuel
+            .number("(d+)[%L]").optional()       // fuel level
             .groupEnd("?")
             .groupEnd("?")
-            .any()
+            .groupEnd("?")
+            .groupEnd("?")
             .compile();
 
     private String decodeAlarm(int value) {
         switch (value) {
+            case 1:
+                return Position.ALARM_SOS;
             case 5:
             case 6:
                 return Position.ALARM_DOOR;
@@ -182,6 +188,7 @@ public class StartekProtocolDecoder extends BaseProtocolDecoder {
         int input = parser.nextHexInt();
         int output = parser.nextHexInt();
         position.set(Position.KEY_IGNITION, BitUtil.check(input, 1));
+        position.set(Position.KEY_DOOR, BitUtil.check(input, 2));
         position.set(Position.KEY_INPUT, input);
         position.set(Position.KEY_OUTPUT, output);
 
@@ -217,12 +224,21 @@ public class StartekProtocolDecoder extends BaseProtocolDecoder {
             }
         }
 
-        if (parser.hasNext(6)) {
+        if (parser.hasNextAny(6)) {
             position.set(Position.KEY_RPM, parser.nextInt());
             position.set(Position.KEY_ENGINE_LOAD, parser.nextInt());
+            position.set("airFlow", parser.nextInt());
+            position.set("airPressure", parser.nextInt());
+            if (parser.hasNext()) {
+                position.set("airTemp", parser.nextInt() - 40);
+            }
             position.set(Position.KEY_THROTTLE, parser.nextInt());
-            position.set(Position.KEY_COOLANT_TEMP, parser.nextInt() - 40);
-            position.set(Position.KEY_FUEL_CONSUMPTION, parser.nextInt() * 0.1);
+            if (parser.hasNext()) {
+                position.set(Position.KEY_COOLANT_TEMP, parser.nextInt() - 40);
+            }
+            if (parser.hasNext()) {
+                position.set(Position.KEY_FUEL_CONSUMPTION, parser.nextInt() * 0.1);
+            }
             position.set(Position.KEY_FUEL_LEVEL, parser.nextInt());
         }
 

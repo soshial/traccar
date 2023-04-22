@@ -1,6 +1,6 @@
 package org.traccar.protocol;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.traccar.ProtocolTest;
 
 public class WatchFrameDecoderTest extends ProtocolTest {
@@ -8,7 +8,7 @@ public class WatchFrameDecoderTest extends ProtocolTest {
     @Test
     public void testDecode() throws Exception {
 
-        var decoder = new WatchFrameDecoder();
+        var decoder = inject(new WatchFrameDecoder());
 
         verifyFrame(
                 binary("5b33472a3335323636313039303134333135302a303030412a4c4b2c302c302c3130305d"),

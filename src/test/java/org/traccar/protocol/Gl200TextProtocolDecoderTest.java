@@ -1,6 +1,6 @@
 package org.traccar.protocol;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.traccar.ProtocolTest;
 import org.traccar.model.Position;
 
@@ -9,7 +9,25 @@ public class Gl200TextProtocolDecoderTest extends ProtocolTest {
     @Test
     public void testDecode() throws Exception {
 
-        var decoder = new Gl200TextProtocolDecoder(null);
+        var decoder = inject(new Gl200TextProtocolDecoder(null));
+
+        verifyPositions(decoder, false, buffer(
+                "+BUFF:GTFRI,2E0503,861106050005423,,,0,1,,,,,,,,,,,,0,0,,98,1,0,,,20200101000001,0083$"));
+
+        verifyAttribute(decoder, buffer(
+                "+RESP:GTERI,271002,863457051562823,,00000002,,10,1,1,0.0,15,28.2,-58.695253,-34.625413,20230119193305,0722,0007,1168,16B3BB,00,0.0,,,,99,210100,2,1,28F8A149F69A3C25,1,0190,20230119193314,07C7$"),
+                Position.PREFIX_TEMP + 1, 25.0);
+
+        verifyAttribute(decoder, buffer(
+                "+RESP:GTDAR,F10406,865284049582228,,4,0,,,1,18.5,0,129.4,114.015430,22.537279,20210922004634,0460,0000,27BD,0DFC,,,,20210922004635,082B$"),
+                "warningType", 4);
+
+        verifyAttribute(decoder, buffer(
+                "+RESP:GTNMR,423033,355197370058831,,0,0,0,1,0,0.0,298,182.7,-79.257983,43.875152,20220627132020,,,,,15,0,74,20220627144928,03CF$"),
+                Position.KEY_BATTERY_LEVEL, 74);
+
+        verifyPosition(decoder, buffer(
+                "+RESP:GTFRI,5E0100,861971050039361,,,,10,1,1,10.4,140,196.9,-80.709946,35.016525,20220302220944,0310,0260,1CE9,52A1,00,0.0,,,,,420000,,,,20220302220948,1B0B$"));
 
         verifyAttribute(decoder, buffer(
                 "+RESP:GTFRI,423031,866873025895726,,0,1,1,0,1,16,0.0,351,51.6,121.391063,31.164633,20181212072535,460,00,1877,DAE,00,3,85,20181212072535,002C$"),

@@ -1,6 +1,6 @@
 package org.traccar.protocol;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.traccar.ProtocolTest;
 import org.traccar.model.Position;
 
@@ -9,7 +9,7 @@ public class GoSafeProtocolDecoderTest extends ProtocolTest {
     @Test
     public void testDecode() throws Exception {
 
-        var decoder = new GoSafeProtocolDecoder(null);
+        var decoder = inject(new GoSafeProtocolDecoder(null));
 
         verifyPositions(decoder, false, text(
                 "*GS06,357330050846344,RST#"));
